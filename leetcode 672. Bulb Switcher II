@@ -1,0 +1,243 @@
+There is a room with n lights which are turned on initially and 4 buttons on the wall. After performing exactly m unknown operations towards buttons, you need to return how many different kinds of status of the n lights could be.
+
+Suppose n lights are labeled as number [1, 2, 3 ..., n], function of these 4 buttons are given below:
+
+Flip all the lights.
+Flip lights with even numbers.
+Flip lights with odd numbers.
+Flip lights with (3k + 1) numbers, k = 0, 1, 2, ...
+ 
+
+Example 1:
+
+Input: n = 1, m = 1.
+Output: 2
+Explanation: Status can be: [on], [off]
+ 
+
+Example 2:
+
+Input: n = 2, m = 1.
+Output: 3
+Explanation: Status can be: [on, off], [off, on], [off, off]
+ 
+
+Example 3:
+
+Input: n = 3, m = 1.
+Output: 4
+Explanation: Status can be: [off, on, off], [on, off, on], [off, off, off], [off, on, on].
+ 
+
+Note: n and m both fit in range [0, 1000].
+
+
+
+MySolutions:
+
+
+/*
+analysis: the reason method 1 was causing TLE was because the time and space complexity were too large, so needed to be reduced.
+How to reduced the complexities? they can be reduced if they have circles and duplicates.
+
+How to reduce space complexity? 
+
+let m1, m2, m3, m4 be the 4 operations performed on n bulbs:
+m1: 1~   2~   3~   4~   5~   6~   7~   8~   9~   10~  11~  12~  13~  14~  15~
+m2: 1    2~   3    4~   5    6~   7    8~   9    10~  11   12~  13   14~  15
+m3: 1~   2    3~   4    5~   6    7~   8    9~   10   11~  12   13~  14   15~
+m4: 1~   2    3    4~   5    6    7~   8    9    10~  11   12   13~  14   15
+where
+m1: flip all the lights
+m2: flip lights with even numbers
+m3: flip lights with odd numbers
+m4: flip lights with (3K+1) numbers, k = 0, 1, 2, ...
+the tilde indicate the bulbs being flipped by a certain option. 
+From the table above, we can clearly see a pattern that repeats very 6 bulbs for all 4 operations,
+therefore the space complexity can be reduced to (n%6)+6
+
+How to reduce time complexity?
+
+assuming that m is big and all operations (m1,m2,m3,m4) are performed at least once, then
+1. the same operation performed twice equals not performing that operation at all
+2. performing m1+m2 is equivalent to performing m3
+3. performing m2+m3 is equivalent to performing m1
+4. performing m1+m3 is equivalent to performing m2
+
+therefore there can only 8 possible status: null(by performing same op twice), 
+                                            m1, 
+                                            m2, 
+                                            m3, 
+                                            m4, 
+                                            m1+m4, 
+                                            m2+m4, 
+                                            m3+m4.
+
+from above analysis we can see that there must be many duplicated status generated/visited by the brute force method implemented below.
+so, the question is how to reduce the duplicates?
+
+1. we can run all number m of operations just like the brute force method below
+2. but,we will remove duplicated solutions each iteration.
+*/
+
+//method 2: a bfs like approach with reduced space complexity and deduplications
+
+/*
+T(n) = O(m*8), there are m operations, each operation could result in only 8 different status
+*/
+
+class Solution {
+public:
+    int flipLights(int n, int m) {
+        ///special case-if not operations, then there will be only one status
+        if(m == 0){return 1;}
+        
+        int len = ((n > 6)? ((n % 6) + 6) : n);
+        /*
+        here we use 1 for "on" and 0 for "off"
+        (1 << 6) will give 1000000 in binary form, minus 1 will give 111111
+        */
+        int lights = (1 << len) - 1;
+        unordered_set<int> res; //for results and deduplicate
+        queue<int> myQ;
+        myQ.push(lights);
+        while(m--){//perform m operations
+            int size = myQ.size();
+            res.clear();
+            while(size--){
+                int u = myQ.front();
+                myQ.pop();
+                int m1 = op1(u,len);
+                if(!res.count(m1)){
+                    res.insert(m1);
+                    myQ.push(m1);
+                }
+                int m2 = op2(u,len);                
+                if(!res.count(m2)){
+                    res.insert(m2);
+                    myQ.push(m2);
+                }
+                int m3 = op3(u,len);
+                if(!res.count(m3)){
+                    res.insert(m3);
+                    myQ.push(m3);
+                }
+                int m4 = op4(u,len);
+                if(!res.count(m4)){
+                    res.insert(m4);
+                    myQ.push(m4);
+                }                
+            }
+        }
+        
+        return res.size();
+    }
+private:
+    //flip all bulbs
+    int op1(int lights, int len){
+        for(int i = 0; i < len; i++){
+            lights ^= (1<<i);
+        }
+        return lights;
+    }
+    //flip all odd number bulbs
+    int op2(int lights, int len){
+        for(int i = 0; i < len; i+=2){
+            lights ^= (1<<i);
+        }
+        return lights;
+    }
+    //flip all even number bulbs
+    int op3(int lights, int len){
+        for(int i = 1; i < len; i+=2){
+            lights ^= (1<<i);
+        }
+        return lights;
+    }
+    //flip lights with (3K+1), K = 0, 1, 2,...
+    int op4(int lights, int len){
+        int k = 0;
+        while(3*k + 1 < len){
+            lights ^= (1<< ((3*k + 1) - 1));
+            k++;
+        }
+        return lights;
+    }
+};
+
+
+/*
+//Method1: brute force,  TLE
+//T(n) = O(4^m), bc we perform on buttons m times and there 4 options per performance
+class Solution {
+public:
+    int flipLights(int n, int m) {
+        unordered_set<string> res;
+        vector<bool> lights(n+1,true);
+        find(res, lights, m);
+        return res.size();
+    }
+    void find(unordered_set<string>& res, vector<bool>& lights, int m){
+        if(m==0){
+            string tmp = "";
+            int len = lights.size();
+            for(int i = 1; i < len; i++){
+                if(lights[i]){
+                    tmp += "on+";
+                }else{
+                    tmp += "off+";
+                }
+            }
+            res.insert(tmp);
+        }else{
+            for(int i = 1; i <= 4; i++){
+                options(i,lights);
+                find(res, lights, m-1);
+                options(i,lights);
+            }
+        }
+    }
+private:
+    //1. flip all the lights
+    //2. flip lights with even numbers
+    //3. flip lights with odd numbers
+    //4. flip lights with (3k + 1)
+    void options(int op, vector<bool>& lights){
+        int len = lights.size();
+        switch(op){
+            case 1:{
+                for(auto it : lights){
+                    it = !it;
+                }
+                break;
+            }
+            case 2:{
+                for(int i = 0; i < len; i++){
+                    if(i%2 == 0){
+                        lights[i] = !lights[i];
+                    }
+                }
+                break;
+            }
+            case 3:{
+                for(int i = 0; i < len; i++){
+                    if(i%2 != 0){
+                        lights[i] = !lights[i];
+                    }
+                }
+                break;
+            }
+            case 4:{
+                int k = 0;
+                while(3*k+1 < len){
+                    lights[3*k+1] = !lights[3*k+1];
+                    k++;
+                }
+                break;
+            }               
+        }
+    }
+};
+*/
+
+
