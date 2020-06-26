@@ -1,0 +1,133 @@
+leetcode 452. Minimum Number of Arrows to Burst Balloons
+
+There are a number of spherical balloons spread in two-dimensional space. For each balloon, provided input is the start and end coordinates of the horizontal diameter. Since it's horizontal, y-coordinates don't matter and hence the x-coordinates of start and end of the diameter suffice. Start is always smaller than end. There will be at most 104 balloons.
+
+An arrow can be shot up exactly vertically from different points along the x-axis. A balloon with xstart and xend bursts by an arrow shot at x if xstart ≤ x ≤ xend. There is no limit to the number of arrows that can be shot. An arrow once shot keeps travelling up infinitely. The problem is to find the minimum number of arrows that must be shot to burst all balloons.
+
+Example:
+
+Input:
+[[10,16], [2,8], [1,6], [7,12]]
+
+Output:
+2
+
+Explanation:
+One way is to shoot one arrow for example at x = 6 (bursting the balloons [2,8] and [1,6]) and another arrow at x = 11 (bursting the other two balloons).
+
+
+My Solutions:
+
+/*
+the idea that we sort by right ends of the ballons and two ballons can be shot together 
+if the second ballon has smaller left end point then the right end point of the first ballon
+
+this is bc at ballon A, we know the next ballon B must have larger or equal right end,
+then the only way that B overlaps A is by having smaller left point compared to the right point of A
+
+i.e., [[2,8], [1,6], [7,12], [10,16]]
+after sorting by right ends: [[1,6], [2,8], [7,12], [10,16]]
+if we just look at the first ballon: [1,6] and we want to find all ballons that can be shot together with [1,6]
+then we can see that [1,6] can be shot with [2,8], because left end of [2,8] is smaller than right end of [1,6] 
+but [1, 6] can not be shot with [7,12], even though [7,12] also overlaps with [2,8] 
+
+---------------------------------------------------------------------------------------------------------------
+What happens if we do not sort the ballons? 
+
+then there is no way to determine the ballons that can to shot together with a given ballon
+
+i.e., [[2,8], [1,6], [7,12], [10,16]]
+again, we want to look at the first ballon, and find all ballons that can be shot together with [2,8]
+we see that [2,8] overlaps with both [1,6] and [7,12], 
+but they ([2,8], [1,6], [7, 12]) can not be shot togher bc [1,6] do not overlap with [7,12]
+
+----------------------------------------------------------------------------------------------------------------
+What happens if we sort by the left end, instead of the right end?
+
+then, if we are at interval A, and looking for all the ballons after A that can also be shot together with A.
+essentially, we need to find all the ballons that overlapps with A, 
+we know that left end of all ballons after A are larger or equals to left end of A,
+so a ballon B overlaps A iff the left end of B is smaller than right end of A, 
+then we may have situations where we can not determine all ballons that could be shot together with A just using A
+
+for example: consider [[1,11],[2,3],[4,5]],
+both [2,3] and [4,5] overlap with [1,11], but only one of them could be shot together with [1,11]
+
+----------------------------------------------------------------------------------------------------------------
+Can the problem be solved if we sort the ballons by the left ends? Ans: yes!
+
+proof:
+if the ballons are sorted in ascending order based on the left ends,
+then, we can not determine the ballons that can be shot together by scanning the ballons from left to right as shown above.
+
+what if we scan from right to left? 
+then, we would start with the right most ballon and look at second, third right most ballons, so on and so further.
+
+when we are at ballon A, the left end of the next ballon B must be smaller than left end of A,
+so, A overlaps B iff right end of B is larger than left end of A. 
+
+if B overlaps A, then, the question would be if the next ballon C overlapping A will also overlap B?
+the left end of C must be smaller than left end of B, and right end of C must be larger than left end of A.
+bc left end of A is larger (or equal) than left end of B, then right end of C must also be larger than left end of B,
+therefore B must also overlap with C.
+
+So, we could also solve the problem by sorting the left ends of the ballons
+*/
+
+//Method 2: sorting by left end
+//T(n) = O(nlgn) + O(n)
+//time spent: 304 ms
+class Solution {
+public:
+    int findMinArrowShots(vector<vector<int>>& points) {
+        sort(points.begin(), points.end(), [](const vector<int>& a, const vector<int>& b)->bool{
+            return a[0] < b[0];
+        });
+        vector<vector<int>> merge;
+        int len = points.size();
+        for(int i = len - 1; i >= 0; i--){
+            if(merge.empty()){
+                merge.push_back(points[i]);
+            }else{
+                auto prev = merge.back();
+                if(prev[0] <= points[i][1]){// can be shot together
+                    
+                }else{//can not be shot together
+                    merge.push_back(points[i]);
+                }
+            }
+        }
+        return merge.size();
+    }
+};
+
+
+/*
+//Method 1: sorting by right end
+//T(n) = O(nlgn) + O(n)
+//time spent: 324 ms
+class Solution {
+public:
+    int findMinArrowShots(vector<vector<int>>& points) {
+        sort(points.begin(), points.end(), [](const vector<int>& a, const vector<int>& b)->bool{
+            return a[1] < b[1];
+        });
+        vector<vector<int>> merge;
+        int len = points.size();
+        for(auto& it : points){
+            if(merge.empty()){
+                merge.push_back(it);
+            }else{
+                auto prev = merge.back();
+                if(prev[1] >= it[0]){// can be shot together
+                    
+                }else{//can not be shot together
+                    merge.push_back(it);
+                }
+            }
+        }
+        return merge.size();
+    }
+};
+
+*/
