@@ -11,7 +11,7 @@ the idea is based on the fact that any integers or index can be written in binar
 2 = 000010 = 0 * 2^1 (store sum in [0,1])
 4 = 000100 = 0 * 2^2 (store sum in [0,3])
 ......
-
+Calculate Prefix Sum:
 Then we can view an array in a form of tree using index binary forms,
 for example, if root index is 0, then we want all of its children node 
 to have index i that can be converted to 0 by applying following steps:
@@ -21,11 +21,27 @@ to have index i that can be converted to 0 by applying following steps:
 
 for example: let i = 4, then
 1. i = 00000100, in its binary form
-2. it's 2's completment is inverse + 1: 11111011 + 1 = 11111110
+2. it's 2's complement is inverse + 1: 11111011 + 1 = 11111110
 3. i & 2's complement = 00000100 & 11111110 = 00000100
 4. i - (i & 2's complement) = 00000100 - 00000100 = 0
-note the above steps are also used to to find parent of any given node of index i
 
+note1: the above steps are also used to to find parent of any given node of index i
+note2: the 2's complement is used only to find the rightmost significant bit
+
+To calculate the prefix sum for A[0,i], we sum nodes in the BIT starting at tree[i+1] to tree[0]
+//*******************************************************************************************************************
+Proof: given an arbitrary index i, the above steps will calculate the prefix sum A[0,...,i]
+
+if i is index for A, then the corresponding index in tree is i + 1, then lets look at the following two cases:
+
+case1: if the parent of i + 1 is 0, then i + 1 = 0 + 2^k, which represents range [0, 0 + 2^k - 1] == [0, i]
+
+case2: if the parent of i + 1 is j, then i + 1 = j + 2^k, which represents range [j, j + 2^k - 1] = [j, i].
+       Asssuming parent of j is 0, then it will represent [0, j - 1] for the same reasoning above. Therefore
+       sum all the parent node from node i + 1 in the tree will get the range [0,j-1] + [j,i] = [0, i]
+
+//*******************************************************************************************************************
+Update:
 If in the situation where the tree needs to be updated, only the sibling nodes sharing same parent and 
 some nodes at the parent level need to be updated. They need to be updated, because the updated node value
 is used to compute their values. How to find nodes that need to be update? We can apply the following steps:
@@ -67,11 +83,78 @@ case2: i2 is the next right sibling of the parent of i1. Lets denote the direct 
 
 Analysis:
 T(n) = O(lgn), for look up, update
-T(n) = O(n), for building the tree
+T(n) = O(nlgn), for building the tree
 </pre>
 
 -----------------------------------------------------------------------------------------------------------------
 ### My Implementation of BIT
 
+```c++
+class Solution {
+public:
+    void buildTree(vector<int>& A) {
+        int len = A.size();
+        /*
+        the length of tree is length of A + 1, because the 0 index (root) of tree does not store anything.
+        So, if we want the prefix sum in [0, i], we will need to look at i+1 th ele in tree for that reason. 
+        */
+        tree = vector<int>(len + 1, 0);
+        for (int i = 0; i < len; i++) {
+            int j = i + 1;
+            while (j < len + 1) {
+                tree[j] += A[i];
+                j = getSib(j);
+            }
+        }
+    }
+    int getPrefixSum(int pos) {
+        int i = pos + 1;
+        int sum = 0;
+        while (i != 0) {
+            sum += tree[i];
+            i = getParent(i);
+        }
+        return sum;
+    }
+private:
 
+    int getParent(int i) {
+        // get the rightmost bit of i
+        int r = rightBit(i);
+        // remove that bit
+        return i - r;
+    }
+    int getSib(int i) {
+        int r = rightBit(i);
+        return i + r;
+    }
+    int rightBit(int a) {
+        int i = 0;
+        for (; i < 32; i++) {
+            if (a & (1 << i)) {
+                break;
+            }
+        }
+        return 1 << i;
+    }
+    vector<int> tree;
+};
+
+/*
+
+testing case 0:
+{1, 2, 3, 4, 5, 6}
+
+
+*/
+
+int main() {
+    Solution S;
+    vector<int> A = {1,2,3,4,5,6};
+    S.buildTree(A);
+    cout << S.getPrefixSum(2) << endl; // expect 6
+    cout << S.getPrefixSum(4) << endl; // expect 15
+    return 0;
+}
+```
 
