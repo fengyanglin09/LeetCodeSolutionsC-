@@ -9,6 +9,194 @@ Segment trees support searching for all the intervals that contain a query point
 
 Applications of the segment tree are in the areas of computational geometry, and geographic information systems.
 
+### Things need to know for implementation:
+1. let array be A and its size be N
+2. the size for tree array and lazy array should be 4*N
+3. consider 3 cases when implementing segment tree:
+    1. when range is completely not enclosed
+    2. when range is completely enclosed
+    3. when range is partially enclosed
+4. with recursion, the range will reduce to enclosed range
+5. T(n) for both lazy update and lazy query is O(lgn)
+
+-------------------------------------------------------------------------------
+### My Segment Tree Implementation Version 2 - Lazy Propagations
+
+```c++
+/*
+Implementation of Segment Tree With Lazy Updates
+
+The idea is to not update until it become necessary
+
+example:
+        1
+    2       3
+4       5
+
+normally, if we update one node all the nodes in the path from root to leaf will also be updated,
+with lazy update, if the update path is 1->2->5, we may stop update at 2 bc not need to update 5 at the moment
+the change will be propagated to node 5 if needed.
+
+
+O(lgn) for update and query
+*/
+
+//Segment Tree for calculating sum 
+class SegTree {
+public:
+    SegTree(vector<int>& a) {
+        nums = a;
+        n = nums.size();
+        tree = vector<int>(n * 4, 0);
+        lazy = vector<int>(n * 4, 0);
+
+        ToBuild(0, n - 1, 0);
+    }
+    /*
+      lazy query: the idea is the update the tree if lazy is not zero.
+      int l, r are the queried range
+      int low, high are the current range of nums
+      int pos is the start node of tree and always zero
+    */
+    int lazyFindSum(int l, int r, int low, int high, int pos = 0) {
+        //if completely not enclosed, return 0;
+        if (r < low || l > high) {
+            return 0;
+        }
+        /*
+          if completely enclosed in range (l, r)
+               1. check if update tree from lazy is needed and update it if yes
+               2. if the step1 is needed then propagate value of lazy node to its direct children if possible, and set the lazy node to zero
+               3. return the updated tree node value
+        */
+        if (l <= low && r >= high) {//step1
+            if (lazy[pos] != 0) {
+                tree[pos] = lazy[pos];
+                if (low != high) {//step2
+                    lazy[2 * pos + 1] = lazy[pos];
+                    lazy[2 * pos + 2] = lazy[pos];
+                }
+                lazy[pos] = 0;//part of step2
+            }
+            return tree[pos];
+        }
+        /*
+            if partially enclosed, continue search until first complete enclosed is reached
+        */
+        int mid = (low + high) / 2;
+        int left = lazyFindSum(l, r, low, mid, 2*pos+1);
+        int right = lazyFindSum(l, r, mid+1, high, 2*pos+2);
+        return left + right;
+    }
+    /*
+      Lazy update: the idea is to update only the first enclosed range and stop updating further.
+                   The rest part will be updated when needed to
+      int l, r are the range on leaf nodes to which val is used to replace the old values
+      int low, high are current the range of nums
+      int pos is starting tree node, and always zero
+
+    */
+    void lazyUpdate(int l, int r, int low, int high, int pos, int val) {
+        //if completely out of range, do nothing
+        if (r < low || l > high) {
+            return;
+        }
+        /*
+        if compeletely in the range:
+            1. update the tree with lazy if the corresponding lazy node is not zero
+            2. propagate the lazy node value to its children nodes if possible (step1 needed) and reset the lazy node to zero
+            3. add the val to the tree node
+            4. stop the recursion, no need to update further and children nodes will be updated if necessary
+        */
+        if (l <= low && r >= high) {
+            //step1,2
+            lazy[pos] = 0;
+            if (low != high) {
+                lazy[2 * pos + 1] = val;
+                lazy[2 * pos + 2] = val;
+            }
+            tree[pos] = val;//step3
+            //step4
+            return;
+        }
+
+        /*
+            if partially in the range:
+                1. update tree if lazy node is not zero and propagate update to the children nodes  
+                2. recurse until find the first completed enclosed range
+                3. back track and update tree nodes
+        */
+        if (lazy[pos] != 0) {//step1
+            tree[pos] = lazy[pos];
+            //step2
+            if (low != high) {//if there are children nodes
+                lazy[2 * pos + 1] = lazy[pos];
+                lazy[2 * pos + 2] = lazy[pos];
+            }
+            lazy[pos] = 0;
+        }
+        //step2,3
+        int mid = (low + high) / 2;
+        lazyUpdate(l, r, low, mid, 2 * pos + 1, val);
+        lazyUpdate(l, r, mid+1, high, 2 * pos + 2, val);
+
+        tree[pos] = tree[2 * pos + 1] + tree[2 * pos + 2];
+
+    }
+private:
+    vector<int> nums;
+    vector<int> tree;
+    vector<int> lazy;
+    int n;//size of nums
+    /*
+    int low: 0, first index of nums
+    int high: n-1, last index of nums
+    int tpos: starting tree node index - always 0
+    */
+    int ToBuild(int low, int high, int tpos) {
+        if (low == high) {//if leaf node
+            tree[tpos] = nums[low];
+            return nums[low];
+        }
+        int mid = (low + high) / 2;
+        int lo = ToBuild(low, mid, 2 * tpos + 1);
+        int hi = ToBuild(mid + 1, high, 2 * tpos + 2);
+        tree[tpos] = lo + hi;
+        return tree[tpos];
+    }
+};
+
+/*
+
+testing case 0:
+{1, 2, 3, 4, 5, 6}
+
+testing case 1:
+{ 18, 17, 13, 19, 15, 11, 20, 12, 33, 25 };
+Tree after construction:
+{ 183, 82, 101, 48, 34, 43, 58, 35, 13, 19, 15, 31, 12, 33, 25, 18, 17, 0, 0, 0, 0, 0, 0, 11, 20, 0, 0, 0, 0, 0, 0 };
+*/
+
+int main() {
+    /*
+        cout << S.quarySum(1, 4) << endl;//expect 14
+    S.addValue(2, 2, 3);
+    cout << S.quarySum(1, 4) << endl;//expect 17
+    S.addValue(2, 3, 2);
+    cout << S.quarySum(1, 4) << endl;//expect 21
+    return 0;
+    */
+    vector<int> a = { 1,2,3,4,5,6 };
+    SegTree S(a);
+    cout << S.lazyFindSum(1, 4, 0, 5) << endl; // expect 14
+    S.lazyUpdate(2, 2, 0, 5, 0, 6);
+    cout << S.lazyFindSum(1, 4, 0, 5) << endl; // expect 17
+    S.lazyUpdate(2, 3, 0, 5, 0, 2);
+    cout << S.lazyFindSum(1, 4, 0, 5) << endl; // expect 11
+    return 0;
+}
+```
+
 -------------------------------------------------------------------------------
 ### My Segment Tree Implementation Version 1
 
