@@ -20,6 +20,12 @@ Applications of the segment tree are in the areas of computational geometry, and
 5. T(n) for both lazy update and lazy query is O(lgn)
 
 -------------------------------------------------------------------------------
+
+### Leetcode example
+
+#### 308. Range Sum Query 2D - Mutable,  this problem can be solved using 2D segment tree or Binary Index Tree
+
+-------------------------------------------------------------------------------
 ### My Segment Tree Implementation Version 2 - Lazy Propagations
 
 ```c++
