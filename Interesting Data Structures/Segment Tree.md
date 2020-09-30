@@ -178,14 +178,6 @@ Tree after construction:
 */
 
 int main() {
-    /*
-        cout << S.quarySum(1, 4) << endl;//expect 14
-    S.addValue(2, 2, 3);
-    cout << S.quarySum(1, 4) << endl;//expect 17
-    S.addValue(2, 3, 2);
-    cout << S.quarySum(1, 4) << endl;//expect 21
-    return 0;
-    */
     vector<int> a = { 1,2,3,4,5,6 };
     SegTree S(a);
     cout << S.lazyFindSum(1, 4, 0, 5) << endl; // expect 14
