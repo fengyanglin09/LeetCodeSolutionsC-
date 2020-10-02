@@ -101,6 +101,77 @@ T(n) = O(nlgn), for building the tree
 </pre>
 
 -----------------------------------------------------------------------------------------------------------------
+### My Implementation of 2-D BIT Version1 - need to understand 1-d BIT to understand 2-D BIT
+```c++
+/*
+2D BIT
+Build Tree: O((m*n)lg(m*n))
+Update: O(lg(m*n))
+QuerySum: O(lg(m*n))
+*/
+class TwoD_BIT {
+public:
+    TwoD_BIT() {}
+    TwoD_BIT(vector<vector<int>> matrix) {
+        int m = matrix.size();
+        int n = matrix[0].size();
+        tree = vector<vector<int>>(m+1, vector<int>(n+1, 0));
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < n; c++) {
+                for (int i = r+1; i <= m; i += (i & -i)) {
+                    for (int j = c+1; j <= n; j += (j & -j)) {
+                        tree[i][j] += matrix[i - 1][j - 1];
+                    }
+                }
+            }
+        }
+    }
+    /////
+    void update(int r, int c, int val, int old) {
+        int m = tree.size();
+        int n = tree[0].size();
+        for (int i = r + 1; i < m; i += (i & -i)) {
+            for (int j = c + 1; j < n; j += (j & -j)) {
+                tree[i][j] = tree[i][j] - old + val;
+            }
+        }
+    }
+    /////
+    int prefixSum(int r, int c) {
+        int sum = 0;
+        for (int i = r + 1; i > 0; i -= (i & -i)) {
+            for (int j = c + 1; j > 0; j -= (j & -j)) {
+                sum += tree[i][j];
+            }
+        }
+        return sum;
+    }
+private:
+    vector<vector<int>> tree;
+};
+
+int main() {
+
+    vector<vector<int>> A = { {1,1,1,1,1,1},
+                              {1,1,1,1,1,1},
+                              {1,1,1,1,1,1},
+                              {1,1,1,1,1,1},
+                              {1,1,1,1,1,1},
+                              {1,1,1,1,1,1}
+                            };
+    TwoD_BIT tree(A);
+    
+    cout << tree.prefixSum(5, 5) << endl;//expect 36
+
+    tree.update(3, 4, 5, 1);
+
+    cout << tree.prefixSum(5, 5) << endl;//expect 40
+
+    return 0;
+}
+
+```
+-----------------------------------------------------------------------------------------------------------------
 ### My Implementation of BIT Version2
 ```c++
 
