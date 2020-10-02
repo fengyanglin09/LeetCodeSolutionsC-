@@ -101,7 +101,93 @@ T(n) = O(nlgn), for building the tree
 </pre>
 
 -----------------------------------------------------------------------------------------------------------------
-### My Implementation of BIT
+### My Implementation of BIT Version2
+```c++
+
+/*
+Build Tree: O(nlgn)
+Update: O(lgn)
+QuerySum: O(lgn)
+*/
+class BIT {
+public:
+    BIT() {
+    }
+    BIT(vector<int> nums) {
+        int n = nums.size();
+        tree = vector<int>(n + 1, 0);
+        //build the tree
+        for (int i = 0; i < n; i++) {
+            int j = i + 1;//j is index of tree node
+            while (j <= n) {//propagate to all sibling nodes
+                tree[j] += nums[i];
+                j = sibling(j);
+            }
+        }
+    }
+    /*
+    int i: the index for nums (the original data array)
+    int val: the value changed at i th postion in nums
+    int old: the old value in nums at i th postion that will be replaced by val
+    */
+    void update(int i, int val, int old) {
+        int j = i + 1;
+        int n = tree.size();
+        while (j < n) {
+            tree[j] = tree[j] - old + val;
+            j = sibling(j);
+        }
+    }
+    /*
+    int i: the index of the range to get the prefix sum starting from begining
+    */
+    int prefixSum(int i) {
+        int sum = 0;
+        int j = i + 1;
+        while (j > 0) {//j can not be zero, because 0's parent is 0, which is create infinit loop
+            sum += tree[j];
+            j = parent(j);
+        }
+        return sum;
+    }
+    /*
+    int i, j: the indices for the range of getting the sum, where j > i
+    */
+    int sum(int i, int j) {
+        return prefixSum(j) - prefixSum(i);
+    }
+private:
+    int parent(int i) {//-i is i's 2's complement
+        return i - (i & -i);
+    }
+    int sibling(int i) {
+        return i + (i & -i);
+    }
+    vector<int> tree;
+};
+
+int main() {
+
+    vector<int> A = { 1,2,3,4,5,6 };
+    BIT tree(A);
+
+    cout << tree.sum(0, 5) << endl;//expect 20
+
+    tree.update(5, 7, 6);
+
+    cout << tree.sum(0, 5) << endl;//expect 21    
+
+    tree.update(5, 6, 7);
+
+    cout << tree.prefixSum(5) << endl;//expect 21
+
+    return 0;
+}
+
+```
+
+-----------------------------------------------------------------------------------------------------------------
+### My Implementation of BIT Version1
 
 ```c++
 class Solution {
@@ -170,5 +256,33 @@ int main() {
     cout << S.getPrefixSum(4) << endl; // expect 15
     return 0;
 }
+```
+
+------------------------------------------------------
+
+## Alternative Way For Calculating Parents and Siblings
+
+```c++
+
+/**
+     * To get parent
+     * 1) 2's complement to get minus of index
+     * 2) AND this with index
+     * 3) Subtract that from index
+     */
+    private int getParent(int index){
+        return index - (index & -index);
+    }
+    
+    /**
+     * To get next
+     * 1) 2's complement of get minus of index
+     * 2) AND this with index
+     * 3) Add it to index
+     */
+    private int getNext(int index){
+        return index + (index & -index);
+    }
+
 ```
 
